@@ -1,7 +1,26 @@
 [
-  { "title": "رامي صبري - إحساسي معاك", "file": "ihsasy-maak.mp3" },
-  { "title": "رامي صبري - بحبك", "file": "bahebak-ramy.mp3" },
-  { "title": "أنغام - مش حبيبي بس", "file": "mesh-habibi-bas.mp3" },
-  { "title": "وائل جسار - عايش عشانك", "file": "ayesh-ashanek.mp3" },
-  { "title": "عبد الرحمن محمد - أصابك عشق", "file": "asabaka-eshq.mp3" }
+  {
+    "id": 1,
+    "title": "حبيت يا قلبي",
+    "artist": "Background Track",
+    "url": "https://www.dropbox.com/scl/fi/q8ebcps7glm732exit0xj/06_Habeet_Ya_Alby.mp3?rlkey=1qiqmubyxdx0j5hlwlu50w1za&st=68sbblx1&raw=1"
+  },
+  {
+    "id": 2,
+    "title": "عايش عشانك",
+    "artist": "Track 02",
+    "url": "https://www.dropbox.com/scl/fi/43hi52lx5lpqsmdbo9vja/07.Aaish_Aashanak.mp3?rlkey=d2d4slns13uz6tg52o4j87jy8&st=gbqf03z4&raw=1"
+  },
+  {
+    "id": 3,
+    "title": "إحساسي معاك",
+    "artist": "رامي صبري",
+    "url": "https://www.dropbox.com/scl/fi/70x2h6ezi2rxi9k20433s/Albumaty.Com_ramy_sbri_ehsasy_maak.mp3?rlkey=38d0r2xitk8tekprrgvndczzr&st=bi8ac6cl&raw=1"
+  },
+  {
+    "id": 4,
+    "title": "مش حبيبي بس",
+    "artist": "أنغام",
+    "url": "https://www.dropbox.com/scl/fi/1f67w92n33pn8jzuhzcin/Albumaty.Com_angham_msh_hbyby_bs_-_ttr_mslsl_atnyn_ghyrna.mp3?rlkey=bks4b7em84inps8hxqluzv434&st=88whs619&raw=1"
+  }
 ]
