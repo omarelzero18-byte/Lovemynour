@@ -1,0 +1,2004 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+<title>سر عمر ❤️ — من Stitch</title>
+<meta name="theme-color" content="#881337" />
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=Aref+Ruqaa:wght@400;700&display=swap" rel="stylesheet" />
+
+<!-- Firebase compat SDK (no build step needed) -->
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-storage-compat.js"></script>
+
+<style>
+  :root{
+    --pink:#fbcfe8;
+    --rose:#fb7185;
+    --blush:#ffe4e6;
+    --magenta:#881337;
+    --white:#ffffff;
+    --glass: rgba(255,255,255,.6);
+    --glass-strong: rgba(255,255,255,.82);
+    --shadow-soft: 0 18px 40px -18px rgba(136,19,55,.35);
+  }
+  *{ -webkit-tap-highlight-color: transparent; box-sizing:border-box; }
+  html,body{ height:100%; overscroll-behavior-y: none; }
+  body{
+    margin:0;
+    font-family:'Cairo', sans-serif;
+    color:var(--magenta);
+    background:
+      radial-gradient(120% 90% at 15% 0%, var(--pink) 0%, transparent 55%),
+      radial-gradient(110% 90% at 100% 15%, var(--rose) 0%, transparent 45%),
+      radial-gradient(140% 100% at 50% 120%, var(--blush) 0%, transparent 60%),
+      var(--white);
+    min-height:100dvh;
+    overflow-x:hidden;
+    touch-action: pan-y;
+  }
+  ::selection{ background:var(--rose); color:#fff; }
+  button{ font-family:inherit; }
+  .letter-font{ font-family:'Aref Ruqaa', serif; }
+
+  #particle-canvas{
+    position:fixed; inset:0; width:100%; height:100%;
+    pointer-events:none; z-index:0;
+  }
+
+  /* ---------- SCENES ---------- */
+  .scene{
+    position:fixed; inset:0;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding: max(24px, env(safe-area-inset-top)) 20px max(140px, calc(env(safe-area-inset-bottom) + 120px));
+    opacity:0; visibility:hidden; pointer-events:none;
+    transform: scale(.97);
+    transition: opacity .55s ease, transform .55s cubic-bezier(.22,1,.36,1), visibility 0s linear .55s;
+    z-index:5;
+  }
+  .scene.active{
+    opacity:1; visibility:visible; pointer-events:auto; transform:scale(1);
+    transition: opacity .55s ease, transform .55s cubic-bezier(.22,1,.36,1), visibility 0s linear 0s;
+    overflow-y:auto;
+  }
+
+  .caption{
+    font-size:1.05rem; font-weight:600; color:var(--magenta);
+    opacity:0; transform:translateY(6px);
+    animation: fadeUp .7s ease forwards;
+  }
+  @keyframes fadeUp{ to{ opacity:1; transform:translateY(0);} }
+
+  .zzz{ position:absolute; font-weight:800; color:var(--rose); opacity:0; pointer-events:none; }
+  .zzz.z1{ animation: zzzFloat 2.4s ease-in infinite; }
+  .zzz.z2{ animation: zzzFloat 2.4s ease-in infinite .8s; }
+  .zzz.z3{ animation: zzzFloat 2.4s ease-in infinite 1.6s; }
+  @keyframes zzzFloat{
+    0%{ opacity:0; transform:translate(0,0) scale(.6); }
+    15%{ opacity:.9; }
+    100%{ opacity:0; transform:translate(18px,-46px) scale(1.15); }
+  }
+
+  /* ---------- STITCH ---------- */
+  #stitch-layer{
+    position:fixed;
+    left:0; right:0;
+    bottom: calc(env(safe-area-inset-bottom) + 14px);
+    display:flex; justify-content:center;
+    z-index:40; pointer-events:none;
+  }
+  #stitch-wrap{
+    position:relative;
+    pointer-events:auto;
+    width:clamp(118px, 30vw, 176px);
+    display:flex; justify-content:center;
+    cursor:pointer;
+    user-select:none;
+    -webkit-user-select:none;
+  }
+  #stitch-shadow{
+    position:absolute; bottom:-6px; left:50%; transform:translateX(-50%);
+    width:62%; height:14px; border-radius:50%;
+    background:radial-gradient(closest-side, rgba(136,19,55,.28), transparent 75%);
+    filter:blur(1px);
+  }
+  #stitch-img{
+    width:100%; display:block; filter:drop-shadow(0 10px 18px rgba(136,19,55,.25));
+    animation: stitchFloat 3.6s ease-in-out infinite;
+    transform-origin:center bottom;
+    transition: transform .25s ease;
+  }
+  /* graceful fallback if a local Stitch PNG is missing — no broken-image icon, ever */
+  #stitch-fallback{
+    display:none; width:100%; aspect-ratio:1/1; align-items:center; justify-content:center;
+    font-size:clamp(52px, 16vw, 78px);
+    animation: stitchFloat 3.6s ease-in-out infinite;
+    filter:drop-shadow(0 10px 18px rgba(136,19,55,.25));
+  }
+  @keyframes stitchFloat{
+    0%,100%{ transform: translateY(0) rotate(-1.5deg); }
+    50%{ transform: translateY(-9px) rotate(1.5deg); }
+  }
+  #stitch-wrap[data-state="sleeping"] #stitch-img{
+    animation: stitchSleep 4s ease-in-out infinite;
+    opacity:.85;
+  }
+  @keyframes stitchSleep{
+    0%,100%{ transform: translateY(0) rotate(6deg); }
+    50%{ transform: translateY(-3px) rotate(6deg); }
+  }
+  #stitch-wrap[data-state="waking"] #stitch-img{ animation: stitchWake .7s cubic-bezier(.34,1.56,.64,1); }
+  @keyframes stitchWake{
+    0%{ transform: rotate(6deg) scale(.95); }
+    50%{ transform: rotate(-8deg) scale(1.06); }
+    100%{ transform: rotate(-1.5deg) scale(1); }
+  }
+  #stitch-wrap[data-state="talking"] #stitch-img{ animation: stitchTalk .5s ease-in-out infinite; }
+  @keyframes stitchTalk{
+    0%,100%{ transform: translateY(0) rotate(-1.5deg) scaleY(1); }
+    50%{ transform: translateY(-5px) rotate(1.5deg) scaleY(1.03); }
+  }
+  #stitch-wrap[data-state="jumping"] #stitch-img{ animation: stitchJump .75s cubic-bezier(.34,1.56,.64,1); }
+  @keyframes stitchJump{
+    0%{ transform: translateY(0) scaleY(1); }
+    20%{ transform: translateY(6px) scaleY(.88); }
+    55%{ transform: translateY(-58px) rotate(-8deg) scaleY(1.05); }
+    80%{ transform: translateY(0) scaleY(.94); }
+    100%{ transform: translateY(0) scaleY(1); }
+  }
+  #stitch-wrap[data-state="dancing"] #stitch-img,
+  #stitch-wrap[data-state="celebrating"] #stitch-img{ animation: stitchDance .55s ease-in-out infinite; }
+  @keyframes stitchDance{
+    0%{ transform: translateY(0) rotate(-9deg); }
+    25%{ transform: translateY(-14px) rotate(9deg); }
+    50%{ transform: translateY(0) rotate(-9deg); }
+    75%{ transform: translateY(-10px) rotate(9deg); }
+    100%{ transform: translateY(0) rotate(-9deg); }
+  }
+  #stitch-wrap[data-state="groove"] #stitch-img{ animation: stitchGroove 1.6s ease-in-out infinite; }
+  @keyframes stitchGroove{
+    0%,100%{ transform: translateY(0) rotate(-3deg); }
+    50%{ transform: translateY(-6px) rotate(3deg); }
+  }
+  #stitch-wrap[data-state="whispering"] #stitch-img{ animation: stitchWhisper 1.2s ease-in-out infinite; }
+  @keyframes stitchWhisper{
+    0%,100%{ transform: translateX(0) rotate(-2deg); }
+    50%{ transform: translateX(-6px) rotate(2deg); }
+  }
+  #stitch-wrap[data-state="pointing"] #stitch-img{ transform: translateY(-4px) rotate(-4deg); }
+  #stitch-wrap[data-state="recording"] #stitch-img{ animation: stitchTalk .9s ease-in-out infinite; }
+
+  .tap-pulse{ animation: tapPulse .35s ease; }
+  @keyframes tapPulse{ 0%{ transform:scale(1);} 40%{ transform:scale(.9);} 100%{ transform:scale(1);} }
+
+  /* ---------- SPEECH BUBBLE ---------- */
+  #bubble{
+    position:absolute; bottom:calc(100% + 10px); right:50%;
+    transform:translateX(50%) translateY(6px) scale(.94);
+    min-width:180px; max-width:min(78vw, 340px);
+    background:var(--glass-strong);
+    backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+    border:1px solid rgba(255,255,255,.7);
+    border-radius:22px;
+    padding:14px 18px;
+    box-shadow:var(--shadow-soft);
+    font-weight:600; font-size:.98rem; line-height:1.55; color:var(--magenta);
+    opacity:0; pointer-events:none;
+    transition: opacity .28s ease, transform .28s cubic-bezier(.22,1,.36,1);
+    text-align:center;
+    white-space:pre-wrap;
+  }
+  #bubble.show{ opacity:1; transform:translateX(50%) translateY(0) scale(1); pointer-events:auto; }
+  #bubble::after{
+    content:''; position:absolute; top:100%; right:22px;
+    border:9px solid transparent; border-top-color:var(--glass-strong);
+    filter:drop-shadow(0 2px 1px rgba(255,255,255,.4));
+  }
+  #bubble .cursor{ display:inline-block; width:2px; height:1em; background:var(--rose); margin-inline-start:2px; vertical-align:-2px; animation:blink 1s step-end infinite; }
+  @keyframes blink{ 50%{ opacity:0; } }
+
+  .choice-btn{
+    background:linear-gradient(135deg, var(--rose), #f472b6);
+    color:#fff; font-weight:700; font-size:1rem;
+    padding:14px 28px; border-radius:999px; border:none;
+    box-shadow:0 14px 26px -10px rgba(251,113,133,.6);
+    min-height:44px; cursor:pointer;
+    transition:transform .15s ease, box-shadow .15s ease;
+    opacity:0; transform:translateY(10px);
+    animation:fadeUp .5s ease forwards;
+  }
+  .choice-btn:active{ transform:scale(.96); }
+  .choice-btn.ghost{
+    background:var(--glass-strong); color:var(--magenta);
+    box-shadow:0 10px 20px -12px rgba(136,19,55,.3);
+    border:1px solid rgba(136,19,55,.12);
+  }
+
+  /* ---------- ENVELOPE ---------- */
+  .envelope-stage{ display:flex; flex-direction:column; align-items:center; gap:22px; width:100%; max-width:380px; }
+  .envelope-wrap{ position:relative; width:min(78vw, 300px); aspect-ratio: 4/3; }
+  .envelope-glow{
+    position:absolute; inset:-30px; border-radius:50%;
+    background:radial-gradient(closest-side, rgba(251,113,133,.35), transparent 70%);
+    filter:blur(6px); animation:glowPulse 2.6s ease-in-out infinite;
+  }
+  @keyframes glowPulse{ 0%,100%{ opacity:.55;} 50%{ opacity:1;} }
+  .envelope-body{
+    position:absolute; inset:0;
+    border-radius: 26px 26px 34px 34px;
+    background: linear-gradient(160deg, #fff 0%, var(--blush) 55%, var(--pink) 100%);
+    box-shadow: var(--shadow-soft);
+    overflow:hidden;
+  }
+  .envelope-flap{
+    position:absolute; top:0; left:0; right:0; height:56%;
+    background:linear-gradient(160deg, var(--pink), var(--rose));
+    clip-path: polygon(0 0, 100% 0, 50% 100%);
+    transform-origin: top center;
+    transition: transform .9s cubic-bezier(.22,1,.36,1);
+  }
+  .envelope-wrap.opened .envelope-flap{ transform: rotateX(180deg); }
+  .envelope-seal{
+    position:absolute; left:50%; top:44%; transform:translate(-50%,-50%);
+    width:56px; height:56px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #f472b6, var(--magenta));
+    box-shadow:0 8px 16px -6px rgba(136,19,55,.6), inset 0 -2px 4px rgba(0,0,0,.25);
+    display:flex; align-items:center; justify-content:center;
+    color:#fff; font-size:1.3rem; z-index:3;
+  }
+  .envelope-caption{
+    position:absolute; bottom:16px; left:0; right:0; text-align:center;
+    font-weight:800; color:var(--magenta); font-size:1.05rem; letter-spacing:.3px;
+  }
+  .envelope-scratch{
+    position:absolute; inset:0; z-index:5; border-radius:26px 26px 34px 34px;
+    touch-action:none; cursor:grab;
+  }
+  .scratch-hint{
+    font-size:.92rem; font-weight:700; color:var(--magenta); opacity:.75;
+    display:flex; align-items:center; gap:6px;
+  }
+  .scratch-progress-track{
+    width:100%; max-width:260px; height:8px; border-radius:999px;
+    background:rgba(136,19,55,.12); overflow:hidden;
+  }
+  .scratch-progress-fill{ height:100%; width:0%; background:linear-gradient(90deg, var(--rose), #f472b6); transition:width .2s ease; }
+
+  /* ---------- LETTER ---------- */
+  .letter-card{
+    width:100%; max-width:420px; border-radius:26px;
+    background: repeating-linear-gradient(var(--white), var(--white) 33px, rgba(136,19,55,.06) 34px);
+    box-shadow:var(--shadow-soft);
+    padding:30px 26px; position:relative;
+    border:1px solid rgba(255,255,255,.8);
+  }
+  .letter-line{
+    opacity:0; transform:translateY(10px);
+    transition: opacity .6s ease, transform .6s cubic-bezier(.22,1,.36,1);
+    font-size:1.28rem; line-height:2; color:var(--magenta); text-align:center;
+  }
+  .letter-line.show{ opacity:1; transform:translateY(0); }
+
+  /* ---------- HUB ---------- */
+  .progress-badge{
+    position:absolute; top:calc(env(safe-area-inset-top) + 14px); right:50%; transform:translateX(50%);
+    background:var(--glass-strong); backdrop-filter:blur(10px);
+    padding:8px 18px; border-radius:999px; font-weight:700; font-size:.85rem;
+    box-shadow:0 10px 20px -12px rgba(136,19,55,.3); display:flex; align-items:center; gap:8px;
+  }
+  .progress-badge .track{ width:70px; height:6px; border-radius:999px; background:rgba(136,19,55,.15); overflow:hidden; }
+  .progress-badge .fill{ height:100%; background:linear-gradient(90deg, var(--rose), #f472b6); transition:width .4s ease; }
+
+  #floating-nav{
+    position:fixed; bottom:calc(env(safe-area-inset-bottom) + 12px); left:50%;
+    transform:translate(-50%, 140%);
+    display:flex; gap:6px; padding:8px; border-radius:999px;
+    background:var(--glass-strong); backdrop-filter:blur(14px);
+    box-shadow:var(--shadow-soft); z-index:50;
+    transition: transform .5s cubic-bezier(.22,1,.36,1);
+  }
+  #floating-nav.visible{ transform:translate(-50%, 0); }
+  #floating-nav button{
+    width:50px; height:50px; border-radius:50%; border:none; background:transparent;
+    font-size:1.35rem; display:flex; align-items:center; justify-content:center;
+    cursor:pointer; position:relative; min-width:44px; min-height:44px;
+    transition:transform .15s ease, background .2s ease;
+  }
+  #floating-nav button:active{ transform:scale(.9); }
+  #floating-nav button.done::after{
+    content:''; position:absolute; bottom:5px; right:8px; width:7px; height:7px;
+    border-radius:50%; background:var(--rose);
+  }
+  #floating-nav button.ready-final{ background:linear-gradient(135deg, var(--rose), #f472b6); animation:glowPulse 1.8s ease-in-out infinite; }
+  @media (max-width:380px){
+    #floating-nav{ gap:2px; padding:6px; }
+    #floating-nav button{ width:44px; height:44px; font-size:1.15rem; min-width:44px; min-height:44px; }
+  }
+
+  .hub-heading{ font-weight:800; font-size:1.3rem; }
+  .hub-hint{ opacity:.75; font-size:.92rem; font-weight:600; }
+
+  .heart-egg{
+    position:absolute; font-size:1.6rem; cursor:pointer; user-select:none;
+    filter:drop-shadow(0 6px 10px rgba(251,113,133,.35));
+    animation: eggFloat 5s ease-in-out infinite;
+  }
+  @keyframes eggFloat{ 0%,100%{ transform:translateY(0);} 50%{ transform:translateY(-10px);} }
+
+  /* ---------- SHEETS ---------- */
+  .sheet-backdrop{
+    position:fixed; inset:0; background:rgba(136,19,55,.28); backdrop-filter:blur(2px);
+    z-index:60; opacity:0; pointer-events:none; transition:opacity .3s ease;
+  }
+  .sheet-backdrop.show{ opacity:1; pointer-events:auto; }
+  .sheet{
+    position:fixed; left:0; right:0; bottom:0; z-index:61;
+    max-height:88vh; overflow-y:auto;
+    background:var(--white);
+    border-radius:28px 28px 0 0;
+    box-shadow:0 -20px 50px -20px rgba(136,19,55,.4);
+    padding: 14px 22px calc(env(safe-area-inset-bottom) + 26px);
+    transform:translateY(100%);
+    transition:transform .42s cubic-bezier(.22,1,.36,1);
+  }
+  .sheet.show{ transform:translateY(0); }
+  .sheet-handle{ width:44px; height:5px; border-radius:999px; background:rgba(136,19,55,.2); margin:6px auto 14px; }
+  .sheet-close{
+    position:absolute; top:14px; left:16px; width:36px; height:36px; border-radius:50%;
+    background:rgba(136,19,55,.08); border:none; font-size:1.1rem; color:var(--magenta); cursor:pointer;
+  }
+
+  /* ---------- LOVE COUNTER ---------- */
+  .counter-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; width:100%; margin-top:18px; }
+  .counter-cell{
+    background:var(--blush); border-radius:18px; padding:14px 6px; text-align:center;
+  }
+  .counter-num{ font-size:1.7rem; font-weight:900; color:var(--magenta); display:inline-block; }
+  .counter-num.pulse{ animation:numPulse .4s ease; }
+  @keyframes numPulse{ 0%{ transform:scale(1.35); color:var(--rose);} 100%{ transform:scale(1); color:var(--magenta);} }
+  .counter-label{ font-size:.78rem; font-weight:700; opacity:.75; margin-top:2px; }
+
+  /* ---------- QUOTE WALL ---------- */
+  .quote-card{
+    position:relative; background:linear-gradient(160deg,#fff,var(--blush));
+    border-radius:24px; padding:34px 22px; min-height:190px;
+    display:flex; align-items:center; justify-content:center; text-align:center;
+    box-shadow:var(--shadow-soft);
+  }
+  .quote-text{ font-family:'Aref Ruqaa', serif; font-size:1.35rem; line-height:2; color:var(--magenta); }
+  .quote-nav{ display:flex; justify-content:space-between; align-items:center; margin-top:14px; }
+  .quote-dot{ width:6px; height:6px; border-radius:50%; background:rgba(136,19,55,.2); display:inline-block; margin:0 2px; }
+  .quote-dot.active{ background:var(--rose); width:16px; border-radius:999px; }
+  .round-btn{
+    width:46px; height:46px; border-radius:50%; border:none;
+    background:var(--glass-strong); color:var(--magenta); font-size:1.1rem;
+    box-shadow:0 8px 16px -10px rgba(136,19,55,.35); cursor:pointer;
+  }
+
+  /* ---------- MUSIC ---------- */
+  .vinyl{
+    width:120px; height:120px; border-radius:50%; margin:0 auto;
+    background:
+      radial-gradient(circle at center, var(--magenta) 0 8%, #2b0a17 8% 10%, #3a0f20 10% 40%, #560d29 40% 70%, #2b0a17 70% 100%);
+    box-shadow:0 14px 26px -12px rgba(0,0,0,.5);
+    position:relative;
+  }
+  .vinyl::after{ content:'♥'; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#fbcfe8; font-size:.8rem; }
+  .vinyl.spinning{ animation:spin 3.2s linear infinite; }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  .music-range{ width:100%; accent-color:var(--rose); height:6px; }
+  .music-controls button{
+    width:52px; height:52px; border-radius:50%; border:none;
+    background:linear-gradient(135deg, var(--rose), #f472b6); color:#fff; font-size:1.2rem;
+    box-shadow:0 12px 22px -10px rgba(251,113,133,.6); cursor:pointer;
+  }
+  .music-controls button.secondary{ background:var(--blush); color:var(--magenta); width:44px; height:44px; font-size:1rem; box-shadow:none; }
+  .track-row{ display:flex; align-items:center; gap:10px; padding:10px 8px; border-radius:14px; cursor:pointer; }
+  .track-row.active{ background:var(--blush); font-weight:800; }
+
+  /* ---------- OMAR VOICE MESSAGES ---------- */
+  .voice-msg-row{
+    display:flex; align-items:center; gap:12px;
+    background:var(--blush); border-radius:18px; padding:12px 16px;
+    border:none; cursor:pointer; text-align:right; width:100%;
+    font-family:inherit; font-size:.95rem; font-weight:700; color:var(--magenta);
+    min-height:44px;
+  }
+  .voice-msg-row .icon{ font-size:1.3rem; flex-shrink:0; }
+  .voice-msg-row.playing{ background:linear-gradient(135deg, var(--rose), #f472b6); color:#fff; }
+
+  /* ---------- VOICE ---------- */
+  .mic-btn{
+    width:96px; height:96px; border-radius:50%; border:none; cursor:pointer;
+    background:linear-gradient(135deg, var(--rose), var(--magenta)); color:#fff; font-size:2.1rem;
+    box-shadow:0 18px 30px -12px rgba(136,19,55,.55);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .mic-btn.recording{ animation:micPulse 1.1s ease-in-out infinite; }
+  .mic-btn.requesting{ animation:micRequest .8s ease-in-out infinite; opacity:.85; }
+  @keyframes micPulse{ 0%,100%{ box-shadow:0 0 0 0 rgba(251,113,133,.55);} 50%{ box-shadow:0 0 0 18px rgba(251,113,133,0);} }
+  @keyframes micRequest{ 0%,100%{ transform:scale(1);} 50%{ transform:scale(.92);} }
+  #wave-canvas{ width:100%; height:70px; }
+  .voice-error{ color:var(--rose); }
+
+  /* ---------- FORMS ---------- */
+  textarea.love-input{
+    width:100%; border-radius:20px; border:1px solid rgba(136,19,55,.15);
+    background:var(--blush); padding:16px; font-family:inherit; font-size:1rem; color:var(--magenta);
+    resize:none; min-height:120px;
+  }
+  textarea.love-input:focus{ outline:2px solid var(--rose); outline-offset:2px; }
+
+  /* ---------- QUIZ ---------- */
+  .quiz-dots{ display:flex; gap:6px; justify-content:center; margin-bottom:14px; }
+  .quiz-dots span{ width:8px; height:8px; border-radius:50%; background:rgba(136,19,55,.18); }
+  .quiz-dots span.done{ background:var(--rose); }
+
+  /* ---------- FINAL ---------- */
+  #scene-final{ background:radial-gradient(120% 100% at 50% 0%, #be123c 0%, #4c0519 70%, #2b0212 100%); }
+  #scene-final .letter-line{ color:#fff; }
+  #scene-final .caption{ color:var(--pink); }
+
+  /* ---------- DEMO BANNER ---------- */
+  #demo-banner{
+    position:fixed; top:calc(env(safe-area-inset-top) + 8px); left:50%; transform:translateX(-50%);
+    background:rgba(136,19,55,.9); color:#fff; font-size:.78rem; font-weight:700;
+    padding:6px 14px; border-radius:999px; z-index:80; display:flex; align-items:center; gap:8px;
+  }
+  #demo-banner button{ background:none; border:none; color:#fff; font-size:.9rem; cursor:pointer; }
+
+  .confetti-heart{ position:fixed; z-index:70; pointer-events:none; font-size:1.4rem; }
+
+  a11y-only, .sr-only{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; }
+  }
+
+  button:focus-visible, textarea:focus-visible, [tabindex]:focus-visible{
+    outline:3px solid var(--rose); outline-offset:2px;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="particle-canvas" aria-hidden="true"></canvas>
+
+<div id="demo-banner" style="display:none;">
+  <span>وضع التجربة — بيانات Firebase مش متوصلة</span>
+  <button id="demo-banner-close" aria-label="إغلاق">✕</button>
+</div>
+
+<!-- ============ SCENE 1: SLEEP / INTRO ============ -->
+<section id="scene-sleep" class="scene active">
+  <div class="caption" id="sleep-caption">شششش... Stitch نايم 🤫</div>
+  <div class="zzz z1" style="top:30%; right:38%;">Z</div>
+  <div class="zzz z2" style="top:26%; right:34%;">z</div>
+  <div class="zzz z3" style="top:22%; right:30%;">z</div>
+  <div id="sleep-buttons" style="display:flex; flex-direction:column; gap:12px; margin-top:26px;"></div>
+</section>
+
+<!-- ============ SCENE 2: ENVELOPE ============ -->
+<section id="scene-envelope" class="scene">
+  <div class="envelope-stage">
+    <div id="envelope-buttons" style="display:flex; flex-direction:column; gap:12px;"></div>
+    <div id="envelope-holder" style="display:none; flex-direction:column; align-items:center; gap:16px; width:100%;">
+      <div class="envelope-wrap" id="envelope-wrap">
+        <div class="envelope-glow"></div>
+        <div class="envelope-body">
+          <div class="envelope-flap"></div>
+          <div class="envelope-seal">❤</div>
+          <div class="envelope-caption">من عمر ❤️</div>
+        </div>
+        <canvas class="envelope-scratch" id="scratch-canvas"></canvas>
+      </div>
+      <div class="scratch-hint" id="scratch-hint">👆 امسحي هنا بإصبعك</div>
+      <div class="scratch-progress-track"><div class="scratch-progress-fill" id="scratch-fill"></div></div>
+      <div id="envelope-continue" style="display:none;"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SCENE 3: LETTER ============ -->
+<section id="scene-letter" class="scene">
+  <div class="letter-card" id="letter-card"></div>
+  <div id="letter-continue" style="margin-top:22px;"></div>
+</section>
+
+<!-- ============ SCENE 4: HUB ============ -->
+<section id="scene-hub" class="scene">
+  <div class="progress-badge" id="progress-badge">
+    <span id="progress-text">0 من 5 ❤️</span>
+    <span class="track"><span class="fill" id="progress-fill" style="width:0%"></span></span>
+  </div>
+  <div style="text-align:center; display:flex; flex-direction:column; align-items:center; gap:10px; max-width:340px;">
+    <div class="hub-heading">إنتي وصلتي للعالم الخاص بينا ❤️</div>
+    <div class="hub-hint" id="hub-hint">دوري بين الأيقونات تحت وجربي كل حاجة، على راحتك خالص 💗</div>
+  </div>
+  <div class="heart-egg" id="heart-egg-1" style="bottom:32%; left:14%;">💗</div>
+  <div class="heart-egg" id="heart-egg-2" style="top:22%; left:20%; animation-delay:1.2s;">🌸</div>
+  <button id="jump-btn" class="choice-btn ghost" style="margin-top:22px; opacity:1; transform:none;">قولي حاجة حلوة يا Stitch 🎀</button>
+</section>
+
+<!-- ============ SCENE 5: FINAL ============ -->
+<section id="scene-final" class="scene">
+  <div class="letter-card" id="final-card" style="background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.15); box-shadow:none;"></div>
+</section>
+
+<!-- ============ STITCH ============ -->
+<div id="stitch-layer">
+  <div id="stitch-wrap" data-state="sleeping" role="button" tabindex="0" aria-label="Stitch">
+    <div id="bubble" aria-live="polite"></div>
+    <div id="stitch-shadow"></div>
+    <img id="stitch-img" src="./assets/images/stitch_PNG13.png" alt="Stitch" draggable="false"
+         onerror="this.dataset.broken='1'; this.style.visibility='hidden'; document.getElementById('stitch-fallback').style.display='flex';"
+         onload="this.dataset.broken=''; this.style.visibility='visible'; document.getElementById('stitch-fallback').style.display='none';" />
+    <div id="stitch-fallback">💙</div>
+  </div>
+</div>
+
+<!-- ============ FLOATING NAV ============ -->
+<nav id="floating-nav" aria-label="التنقل">
+  <button data-panel="counter" aria-label="وقتنا مع بعض">❤️</button>
+  <button data-panel="message" aria-label="رسالة لعمر">💌</button>
+  <button data-panel="music" aria-label="الأغاني">🎵</button>
+  <button data-panel="voice" aria-label="تسجيل صوتي">🎙️</button>
+  <button data-panel="quiz" aria-label="أسئلة Stitch">💬</button>
+  <button data-panel="omarvoice" aria-label="رسايل عمر بصوته">🎧</button>
+</nav>
+
+<!-- ============ SHEET BACKDROP ============ -->
+<div class="sheet-backdrop" id="sheet-backdrop"></div>
+
+<!-- ============ SHEET: LOVE COUNTER / QUOTE WALL ============ -->
+<div class="sheet" id="sheet-counter">
+  <button class="sheet-close" data-close>✕</button>
+  <div class="sheet-handle"></div>
+  <div id="counter-view">
+    <div style="text-align:center; font-weight:800; font-size:1.15rem;">بقالنا سوا...</div>
+    <div class="counter-grid" id="counter-grid"></div>
+    <button class="choice-btn ghost" id="to-quotes-btn" style="width:100%; margin-top:20px; opacity:1; transform:none;">قراءة رسائل حب أكتر ❤️</button>
+  </div>
+  <div id="quotes-view" style="display:none;">
+    <button class="choice-btn ghost" id="back-to-counter" style="opacity:1; transform:none; margin-bottom:14px;">⟵ رجوع</button>
+    <div class="quote-card">
+      <div class="quote-text" id="quote-text"></div>
+    </div>
+    <div class="quote-nav">
+      <button class="round-btn" id="quote-prev" aria-label="السابق">➜</button>
+      <div id="quote-dots"></div>
+      <button class="round-btn" id="quote-next" aria-label="التالي">⟵</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SHEET: MESSAGE TO OMAR ============ -->
+<div class="sheet" id="sheet-message">
+  <button class="sheet-close" data-close>✕</button>
+  <div class="sheet-handle"></div>
+  <div style="text-align:center; font-weight:800; font-size:1.15rem; margin-bottom:6px;">عندي كلام لعمر...</div>
+  <div style="text-align:center; opacity:.75; font-weight:600; font-size:.92rem; margin-bottom:16px;">مش لازم يكون كلام رومانسي، قولي اللي نفسك تقوليه ❤️</div>
+  <textarea class="love-input" id="message-input" placeholder="اكتبي حاجة نفسك عمر يعرفها..."></textarea>
+  <button class="choice-btn" id="message-send" style="width:100%; margin-top:14px; opacity:1; transform:none;">أبعت لعمر ❤️</button>
+  <div id="message-status" style="text-align:center; font-weight:700; margin-top:10px; min-height:22px;"></div>
+</div>
+
+<!-- ============ SHEET: MUSIC ============ -->
+<div class="sheet" id="sheet-music">
+  <button class="sheet-close" data-close>✕</button>
+  <div class="sheet-handle"></div>
+  <div class="vinyl" id="vinyl"></div>
+  <div style="text-align:center; font-weight:800; margin-top:14px;" id="music-title">—</div>
+  <div id="music-error" style="text-align:center; font-size:.82rem; opacity:.7; min-height:18px;"></div>
+  <input type="range" class="music-range" id="music-seek" min="0" max="100" value="0" />
+  <div style="display:flex; justify-content:space-between; font-size:.78rem; opacity:.7;">
+    <span id="music-current">00:00</span><span id="music-duration">00:00</span>
+  </div>
+  <div class="music-controls" style="display:flex; justify-content:center; gap:16px; align-items:center; margin-top:16px;">
+    <button class="secondary" id="music-prev" aria-label="السابق">⏮</button>
+    <button id="music-toggle" aria-label="تشغيل">▶</button>
+    <button class="secondary" id="music-next" aria-label="التالي">⏭</button>
+  </div>
+  <div style="display:flex; align-items:center; gap:10px; margin-top:16px;">
+    <span>🔈</span>
+    <input type="range" class="music-range" id="music-volume" min="0" max="1" step="0.01" value="0.35" />
+  </div>
+  <div id="music-list" style="margin-top:16px;"></div>
+</div>
+
+<!-- ============ SHEET: VOICE ============ -->
+<div class="sheet" id="sheet-voice">
+  <button class="sheet-close" data-close>✕</button>
+  <div class="sheet-handle"></div>
+  <div style="text-align:center; font-weight:800; font-size:1.15rem;">خزنة صوتك ❤️</div>
+  <div style="text-align:center; opacity:.75; font-weight:600; font-size:.92rem; margin:6px 0 18px;" id="voice-hint">لو حابة، سجلي لعمر كلمة من قلبك.. تقدري تقولي "بحبك" أو أي حاجة تانية</div>
+  <div style="display:flex; flex-direction:column; align-items:center; gap:14px;">
+    <canvas id="wave-canvas" style="display:none;"></canvas>
+    <button class="mic-btn" id="mic-btn" aria-label="ابدئي التسجيل">🎙️</button>
+    <div id="voice-timer" style="font-weight:800; font-size:1.1rem;">00:00</div>
+    <audio id="voice-playback" style="display:none;" controls></audio>
+    <div id="voice-buttons" style="display:flex; flex-wrap:wrap; justify-content:center; gap:10px;"></div>
+    <div id="voice-status" style="text-align:center; font-weight:700; min-height:22px;"></div>
+  </div>
+</div>
+
+<!-- ============ SHEET: QUIZ ============ -->
+<div class="sheet" id="sheet-quiz">
+  <button class="sheet-close" data-close>✕</button>
+  <div class="sheet-handle"></div>
+  <div style="text-align:center; font-weight:800; font-size:1.15rem; margin-bottom:10px;">Stitch بيسألك سؤال 👀</div>
+  <div class="quiz-dots" id="quiz-dots"></div>
+  <div id="quiz-body"></div>
+</div>
+
+<!-- ============ SHEET: OMAR'S VOICE MESSAGES ============ -->
+<div class="sheet" id="sheet-omarvoice">
+  <button class="sheet-close" data-close>✕</button>
+  <div class="sheet-handle"></div>
+  <div style="text-align:center; font-weight:800; font-size:1.15rem;">عمر بيكلمك بصوته 🎧❤️</div>
+  <div style="text-align:center; opacity:.75; font-weight:600; font-size:.92rem; margin:6px 0 18px;">دوسي على أي رسالة تسمعيها.. والموسيقى هتهدى لحد ما تخلص</div>
+  <div id="omarvoice-list" style="display:flex; flex-direction:column; gap:10px;"></div>
+  <div id="omarvoice-status" style="text-align:center; font-weight:700; margin-top:12px; min-height:22px;"></div>
+  <audio id="omar-voice-audio" style="display:none;"></audio>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* =========================================================
+   0. CONFIG — FIREBASE
+   ضعي بيانات مشروعك في Firebase Console هنا (Project settings → SDK setup)
+   لو سيبتيها زي ما هي، الموقع هيشتغل في "وضع التجربة" ويخزن كل حاجة على الجهاز بس
+========================================================= */
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const IS_MOBILE = window.innerWidth < 768;
+
+/* =========================================================
+   1. FIREBASE SERVICE — graceful fallback to localStorage
+========================================================= */
+class FirebaseService{
+  constructor(config){
+    this.enabled = false;
+    this.db = null;
+    this.storage = null;
+    try{
+      const looksConfigured = config.apiKey && !config.apiKey.startsWith('YOUR_');
+      if(looksConfigured && window.firebase){
+        firebase.initializeApp(config);
+        this.db = firebase.firestore();
+        this.storage = firebase.storage();
+        this.enabled = true;
+      }
+    }catch(e){
+      console.warn('Firebase init failed, falling back to demo mode.', e);
+      this.enabled = false;
+    }
+    this.sessionId = this._getSessionId();
+    if(!this.enabled){
+      const banner = document.getElementById('demo-banner');
+      banner.style.display = 'flex';
+    }
+  }
+  _getSessionId(){
+    let id = localStorage.getItem('stitch_session_id');
+    if(!id){
+      id = 'guest_' + Math.random().toString(36).slice(2,10);
+      localStorage.setItem('stitch_session_id', id);
+    }
+    return id;
+  }
+  _localPush(key, entry){
+    try{
+      const arr = JSON.parse(localStorage.getItem(key) || '[]');
+      arr.push(entry);
+      localStorage.setItem(key, JSON.stringify(arr));
+    }catch(e){ /* storage full or blocked — fail silently, UI still confirms visually */ }
+  }
+  async saveMessage(text){
+    const entry = { text, sessionId:this.sessionId, timestamp: Date.now() };
+    if(this.enabled){
+      try{ await this.db.collection('messages').add({ text, sessionId:this.sessionId, timestamp: firebase.firestore.FieldValue.serverTimestamp() }); return true; }
+      catch(e){ console.warn(e); this._localPush('messages', entry); return true; }
+    }
+    this._localPush('messages', entry);
+    return true;
+  }
+  async saveAnswer(question, answer, index){
+    const entry = { question, answer, index, sessionId:this.sessionId, timestamp: Date.now() };
+    if(this.enabled){
+      try{ await this.db.collection('answers').add({ question, answer, index, sessionId:this.sessionId, timestamp: firebase.firestore.FieldValue.serverTimestamp() }); return true; }
+      catch(e){ console.warn(e); this._localPush('answers', entry); return true; }
+    }
+    this._localPush('answers', entry);
+    return true;
+  }
+  async saveVoiceMessage(blob, durationSeconds){
+    if(this.enabled){
+      try{
+        const path = `voiceMessages/${this.sessionId}_${Date.now()}.webm`;
+        const ref = this.storage.ref().child(path);
+        await ref.put(blob);
+        const url = await ref.getDownloadURL();
+        await this.db.collection('voiceMessages').add({
+          url, duration: durationSeconds, sessionId:this.sessionId,
+          timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        return true;
+      }catch(e){
+        console.warn(e);
+        this._localPush('voiceMessages', { duration: durationSeconds, sessionId:this.sessionId, timestamp: Date.now(), note:'stored locally only (upload failed)' });
+        return true;
+      }
+    }
+    this._localPush('voiceMessages', { duration: durationSeconds, sessionId:this.sessionId, timestamp: Date.now(), note:'demo mode — not uploaded' });
+    return true;
+  }
+}
+const firebaseService = new FirebaseService(firebaseConfig);
+document.getElementById('demo-banner-close').addEventListener('click', ()=>{
+  document.getElementById('demo-banner').style.display = 'none';
+});
+
+/* =========================================================
+   2. APP STATE + UNLOCK SYSTEM
+========================================================= */
+const STAGE_KEYS = ['envelope','letter','music','message','voice'];
+const STAGE_LABELS = { envelope:'فتح الظرف', letter:'قراءة الرسالة', music:'تشغيل أغنية', message:'إرسال رسالة', voice:'تسجيل صوت' };
+
+class UnlockSystem{
+  constructor(){
+    this.done = new Set(JSON.parse(localStorage.getItem('stitch_unlocked') || '[]'));
+    this.finalSeen = localStorage.getItem('stitch_final_seen') === '1';
+    this._announcedReady = false;
+    this.render();
+  }
+  complete(key){
+    if(this.done.has(key)) return;
+    this.done.add(key);
+    localStorage.setItem('stitch_unlocked', JSON.stringify([...this.done]));
+    this.render();
+    const navBtn = document.querySelector(`#floating-nav button[data-panel="${key}"]`);
+    if(navBtn) navBtn.classList.add('done');
+    if(this.isReady() && !this._announcedReady){
+      this._announcedReady = true;
+      this.markFinalReady();
+    }
+  }
+  isReady(){ return STAGE_KEYS.every(k=>this.done.has(k)); }
+  markFinalSeen(){ this.finalSeen = true; localStorage.setItem('stitch_final_seen','1'); }
+  count(){ return this.done.size; }
+  render(){
+    const total = STAGE_KEYS.length;
+    const n = this.count();
+    document.getElementById('progress-text').textContent = `${n} من ${total} ❤️`;
+    document.getElementById('progress-fill').style.width = `${(n/total)*100}%`;
+    STAGE_KEYS.forEach(k=>{
+      if(this.done.has(k)){
+        const btn = document.querySelector(`#floating-nav button[data-panel="${k}"]`);
+        if(btn) btn.classList.add('done');
+      }
+    });
+  }
+  markFinalReady(){
+    setTimeout(async ()=>{
+      await stitch.say('أعتقد إنك بقيتي جاهزة...');
+      await wait(500);
+      await stitch.say('في حاجة عمر نفسه يقولها بنفسه ✨');
+      showFinalPrompt();
+    }, 900);
+  }
+}
+const unlockSystem = new UnlockSystem();
+
+function wait(ms){ return new Promise(r=>setTimeout(r, ms)); }
+
+function burstHearts(x, y, count){
+  const emojis = ['💖','💕','❤️','✨','💗'];
+  for(let i=0;i<count;i++){
+    const el = document.createElement('div');
+    el.className = 'confetti-heart';
+    el.textContent = emojis[Math.floor(Math.random()*emojis.length)];
+    el.style.left = x + 'px';
+    el.style.top = y + 'px';
+    document.body.appendChild(el);
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 60 + Math.random()*120;
+    const dx = Math.cos(angle)*dist;
+    const dy = Math.sin(angle)*dist - 60;
+    const dur = 900 + Math.random()*500;
+    el.animate([
+      { transform:'translate(0,0) scale(.6)', opacity:1 },
+      { transform:`translate(${dx}px, ${dy}px) scale(1.1)`, opacity:0 }
+    ], { duration: REDUCED_MOTION ? 1 : dur, easing:'cubic-bezier(.22,1,.36,1)' });
+    setTimeout(()=>el.remove(), dur+50);
+  }
+}
+
+/* =========================================================
+   3. STITCH CONTROLLER
+========================================================= */
+/* Local Stitch PNGs are the primary source — put your files at these paths.
+   If a file is missing, #stitch-img fails over to the 💙 fallback automatically
+   (see onerror/onload on the <img id="stitch-img"> tag) — never a broken-image icon. */
+const STITCH_IMG_IDLE = './assets/images/stitch_PNG13.png';
+const STITCH_IMG_HEART = './assets/images/stitch_PNG33.png';
+const STITCH_IMG_DANCE = './assets/images/stitch_PNG29.png';
+const STITCH_IMAGES = {
+  pointing: STITCH_IMG_HEART, recording: STITCH_IMG_HEART,
+  groove: STITCH_IMG_DANCE, dancing: STITCH_IMG_DANCE, celebrating: STITCH_IMG_DANCE
+};
+[STITCH_IMG_IDLE, STITCH_IMG_HEART, STITCH_IMG_DANCE].forEach(src=>{
+  const i = new Image();
+  i.onerror = ()=>console.warn('Stitch image missing:', src);
+  i.src = src;
+});
+
+class StitchController{
+  constructor(el, bubbleEl){
+    this.el = el;
+    this.bubble = bubbleEl;
+    this.imgEl = document.getElementById('stitch-img');
+    this.typingTimer = null;
+    this.lastTap = 0;
+    this.pressTimer = null;
+    this.ambientTimer = null;
+    this._bindInteractions();
+    this._scheduleAmbient();
+  }
+  setState(state){
+    this.el.dataset.state = state;
+    const src = STITCH_IMAGES[state] || STITCH_IMG_IDLE;
+    if(this.imgEl.getAttribute('src') !== src) this.imgEl.setAttribute('src', src);
+  }
+  sleep(){ this.setState('sleeping'); }
+  async wake(){
+    this.setState('waking');
+    await wait(700);
+    this.setState('idle');
+  }
+  talk(){ this.setState('talking'); }
+  stopTalking(){ this.setState('idle'); }
+
+  say(text, opts){
+    opts = opts || {};
+    return new Promise((resolve)=>{
+      clearInterval(this.typingTimer);
+      this.bubble.classList.add('show');
+      this.bubble.innerHTML = '<span class="txt"></span><span class="cursor"></span>';
+      const txtEl = this.bubble.querySelector('.txt');
+      this.talk();
+      let i = 0;
+      const speed = opts.speed || 26;
+      const finish = ()=>{
+        clearInterval(this.typingTimer);
+        txtEl.textContent = text;
+        this.stopTalking();
+        this.bubble.onclick = null;
+        resolve();
+      };
+      this.bubble.onclick = finish;
+      this.typingTimer = setInterval(()=>{
+        i++;
+        txtEl.textContent = text.slice(0, i);
+        if(i >= text.length) finish();
+      }, speed);
+    });
+  }
+  hideBubble(){ this.bubble.classList.remove('show'); }
+
+  async jump(){
+    this.setState('jumping');
+    await wait(750);
+    this.setState('idle');
+  }
+  async celebrate(ms){
+    this.setState('celebrating');
+    await wait(ms || 1600);
+    this.setState('idle');
+  }
+  dance(on){ this.setState(on ? 'dancing' : 'idle'); }
+  groove(on){ if(this.el.dataset.state==='idle' || this.el.dataset.state==='groove') this.setState(on ? 'groove' : 'idle'); }
+  async whisper(){
+    this.setState('whispering');
+    await this.say('بصي... هقولك سر بس متقوليش لعمر 😂');
+    await wait(400);
+    await this.say('هو عامل الموقع ده كله عشان يفرحك ❤️');
+    await wait(2200);
+    this.hideBubble();
+    this.setState('idle');
+  }
+
+  _bindInteractions(){
+    const tapReactions = ['إيه؟ 😂','نعم؟ 👀','أنا هنا أهو 💗','بطلي تدوسي عليا 😂','عايزة إيه يا بنتي؟ 😂💙','أنا مش زرار يا جماعة 😭'];
+    let downTime = 0;
+    const onDown = ()=>{
+      downTime = Date.now();
+      this.pressTimer = setTimeout(()=>{ this.whisper(); this.pressTimer = null; }, 800);
+    };
+    const onUp = ()=>{
+      if(this.pressTimer){
+        clearTimeout(this.pressTimer);
+        this.pressTimer = null;
+        const now = Date.now();
+        if(now - this.lastTap > 2000){
+          this.lastTap = now;
+          this.el.classList.add('tap-pulse');
+          setTimeout(()=>this.el.classList.remove('tap-pulse'), 350);
+          const msg = tapReactions[Math.floor(Math.random()*tapReactions.length)];
+          this.say(msg);
+          setTimeout(()=>this.hideBubble(), 2600);
+        }
+      }
+    };
+    this.el.addEventListener('pointerdown', onDown);
+    this.el.addEventListener('pointerup', onUp);
+    this.el.addEventListener('pointerleave', ()=>{ if(this.pressTimer){ clearTimeout(this.pressTimer); this.pressTimer=null; } });
+    this.el.addEventListener('keydown', (e)=>{ if(e.key==='Enter' || e.key===' '){ onDown(); onUp(); } });
+  }
+
+  _scheduleAmbient(){
+    const delay = 45000 + Math.random()*20000;
+    this.ambientTimer = setTimeout(async ()=>{
+      if(document.hidden || document.getElementById('scene-hub').classList.contains('active') === false){
+        this._scheduleAmbient();
+        return;
+      }
+      if(this.el.dataset.state === 'talking'){ this._scheduleAmbient(); return; }
+      await this.say('بقولك إيه... 👀');
+      await wait(1400);
+      const pool = [
+        'كملي... لسه المفاجأة الكبيرة مستخبية 😏❤️',
+        'قولي لعمر إنك فكرتي فيه النهاردة ❤️',
+        'أنا حاسس إن عمر نفسه يسمع صوتك دلوقتي 👀',
+        'إنتي شايفة إن Stitch شخصية حلوة صح؟ 😎'
+      ];
+      await this.say(pool[Math.floor(Math.random()*pool.length)]);
+      await wait(2600);
+      this.hideBubble();
+      this._scheduleAmbient();
+    }, delay);
+  }
+}
+const stitch = new StitchController(document.getElementById('stitch-wrap'), document.getElementById('bubble'));
+
+/* =========================================================
+   4. PARTICLE SYSTEM
+========================================================= */
+class ParticleSystem{
+  constructor(canvas){
+    this.canvas = canvas;
+    this.ctx = canvas.getContext('2d');
+    this.particles = [];
+    this.running = false;
+    this.emojis = ['💋','💖','💕','🌸','❤️'];
+    this.maxCount = IS_MOBILE ? 14 : 26;
+    this._resize();
+    window.addEventListener('resize', ()=>this._resize());
+    document.addEventListener('visibilitychange', ()=>{
+      if(document.hidden) this.stop(); else this.start();
+    });
+    for(let i=0;i<this.maxCount;i++) this.particles.push(this._spawn(true));
+  }
+  _resize(){
+    this.canvas.width = window.innerWidth;
+    this.canvas.height = window.innerHeight;
+  }
+  _spawn(initial){
+    return {
+      x: Math.random()*window.innerWidth,
+      y: initial ? Math.random()*window.innerHeight : window.innerHeight + 30,
+      size: 14 + Math.random()*16,
+      speed: 0.35 + Math.random()*0.7,
+      drift: (Math.random()-0.5)*0.6,
+      rot: Math.random()*360,
+      rotSpeed: (Math.random()-0.5)*0.6,
+      opacity: 0.35 + Math.random()*0.5,
+      emoji: this.emojis[Math.floor(Math.random()*this.emojis.length)]
+    };
+  }
+  start(){
+    if(this.running || REDUCED_MOTION) return;
+    this.running = true;
+    this._loop();
+  }
+  stop(){ this.running = false; if(this._raf) cancelAnimationFrame(this._raf); }
+  _loop(){
+    if(!this.running) return;
+    const ctx = this.ctx;
+    ctx.clearRect(0,0,this.canvas.width,this.canvas.height);
+    this.particles.forEach(p=>{
+      p.y -= p.speed;
+      p.x += p.drift;
+      p.rot += p.rotSpeed;
+      if(p.y < -40){ Object.assign(p, this._spawn(false)); }
+      ctx.save();
+      ctx.globalAlpha = p.opacity;
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot * Math.PI/180);
+      ctx.font = `${p.size}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.fillText(p.emoji, 0, 0);
+      ctx.restore();
+    });
+    this._raf = requestAnimationFrame(()=>this._loop());
+  }
+}
+const particles = new ParticleSystem(document.getElementById('particle-canvas'));
+if(!REDUCED_MOTION) particles.start();
+else { particles.ctx.globalAlpha = .25; particles.particles.slice(0,6).forEach(p=>{ particles.ctx.font=`${p.size}px sans-serif`; particles.ctx.fillText(p.emoji, p.x, p.y); }); }
+
+/* =========================================================
+   5. SCENE MANAGER
+========================================================= */
+function goToScene(id){
+  document.querySelectorAll('.scene').forEach(s=>s.classList.remove('active'));
+  const target = document.getElementById(id);
+  target.classList.add('active');
+  target.scrollTop = 0;
+}
+
+function renderButtons(container, buttons){
+  container.innerHTML = '';
+  buttons.forEach(b=>{
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn' + (b.ghost ? ' ghost' : '');
+    btn.textContent = b.label;
+    btn.addEventListener('click', b.onClick);
+    container.appendChild(btn);
+  });
+}
+
+/* ---------- INTRO SEQUENCE ---------- */
+async function startIntro(){
+  await wait(1700);
+  document.getElementById('sleep-caption').style.display = 'none';
+  document.querySelectorAll('.zzz').forEach(z=>z.style.display='none');
+  await stitch.wake();
+  await stitch.say('إنتي هنا؟ 😳');
+  await wait(300);
+  await stitch.say('عمر قالي إنك هتيجي 💗');
+  renderButtons(document.getElementById('sleep-buttons'), [
+    { label:'طب قولي بقى 👀', onClick: ()=>{ tryStartBackgroundMusic(); introStep2(); } }
+  ]);
+}
+async function introStep2(){
+  document.getElementById('sleep-buttons').innerHTML = '';
+  await stitch.say('بس قبل أي حاجة...');
+  await wait(300);
+  await stitch.say('عندي مهمة صغيرة ليكي 🎀');
+  renderButtons(document.getElementById('sleep-buttons'), [
+    { label:'أنا جاهزة ❤️', onClick: ()=>{ document.getElementById('sleep-buttons').innerHTML=''; goToScene('scene-envelope'); startEnvelopeScene(); } }
+  ]);
+}
+startIntro();
+
+/* ---------- ENVELOPE SCENE ---------- */
+let scratchCardInstance = null;
+async function startEnvelopeScene(){
+  stitch.setState('pointing');
+  await stitch.say('عمر مخبي حاجة هنا... بس مش هقولك مكانها 😌');
+  renderButtons(document.getElementById('envelope-buttons'), [
+    { label:'أنا هدور 😎', onClick: revealEnvelope }
+  ]);
+}
+async function revealEnvelope(){
+  document.getElementById('envelope-buttons').innerHTML = '';
+  await stitch.say('الرسالة دي لعمر بس... قصدي ليكي 😂❤️');
+  await wait(300);
+  await stitch.say('افتحيها بإيدك 👇');
+  document.getElementById('envelope-holder').style.display = 'flex';
+  initScratchCard();
+}
+
+class ScratchCard{
+  constructor(canvas, wrapEl, opts){
+    this.canvas = canvas;
+    this.wrap = wrapEl;
+    this.ctx = canvas.getContext('2d');
+    this.threshold = opts.threshold || 0.5;
+    this.onProgress = opts.onProgress || function(){};
+    this.onComplete = opts.onComplete || function(){};
+    this.done = false;
+    this.drawing = false;
+    this.last = null;
+    this._resize();
+    this._paintFoil();
+    this._bind();
+    this._checkTimer = null;
+  }
+  _resize(){
+    const rect = this.wrap.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    this.canvas.width = rect.width * dpr;
+    this.canvas.height = rect.height * dpr;
+    this.canvas.style.width = rect.width + 'px';
+    this.canvas.style.height = rect.height + 'px';
+    this.ctx.setTransform(dpr,0,0,dpr,0,0);
+    this.w = rect.width; this.h = rect.height;
+  }
+  _paintFoil(){
+    const ctx = this.ctx;
+    const grad = ctx.createLinearGradient(0,0,this.w,this.h);
+    grad.addColorStop(0,'#fb7185');
+    grad.addColorStop(.5,'#f472b6');
+    grad.addColorStop(1,'#be123c');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0,0,this.w,this.h);
+    ctx.fillStyle = 'rgba(255,255,255,.22)';
+    ctx.font = `${Math.floor(this.w*0.16)}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('💗', this.w/2, this.h*0.42);
+    ctx.font = `700 ${Math.floor(this.w*0.075)}px Cairo, sans-serif`;
+    ctx.fillStyle = 'rgba(255,255,255,.85)';
+    ctx.fillText('امسحي هنا', this.w/2, this.h*0.66);
+  }
+  _pos(e){
+    const rect = this.canvas.getBoundingClientRect();
+    const p = e.touches ? e.touches[0] : e;
+    return { x: p.clientX - rect.left, y: p.clientY - rect.top };
+  }
+  _scratchAt(x,y,lastX,lastY){
+    const ctx = this.ctx;
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    ctx.lineWidth = Math.max(this.w*0.13, 30);
+    ctx.beginPath();
+    if(lastX!=null){ ctx.moveTo(lastX,lastY); ctx.lineTo(x,y); }
+    else{ ctx.moveTo(x,y); ctx.lineTo(x+0.1,y+0.1); }
+    ctx.stroke();
+  }
+  _bind(){
+    const start = (e)=>{
+      if(this.done) return;
+      this.drawing = true;
+      const p = this._pos(e);
+      this.last = p;
+      this._scratchAt(p.x,p.y,null,null);
+      e.preventDefault();
+    };
+    const move = (e)=>{
+      if(!this.drawing || this.done) return;
+      const p = this._pos(e);
+      this._scratchAt(p.x,p.y,this.last.x,this.last.y);
+      this.last = p;
+      this._throttledCheck();
+      e.preventDefault();
+    };
+    const end = ()=>{ this.drawing = false; this.last = null; };
+    this.canvas.addEventListener('mousedown', start);
+    this.canvas.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', end);
+    this.canvas.addEventListener('touchstart', start, { passive:false });
+    this.canvas.addEventListener('touchmove', move, { passive:false });
+    this.canvas.addEventListener('touchend', end);
+  }
+  _throttledCheck(){
+    if(this._checkTimer) return;
+    this._checkTimer = setTimeout(()=>{ this._checkProgress(); this._checkTimer = null; }, 140);
+  }
+  _checkProgress(){
+    const data = this.ctx.getImageData(0,0,this.canvas.width,this.canvas.height).data;
+    let clear = 0, total = 0;
+    for(let i=3;i<data.length;i+=4*20){ total++; if(data[i] < 40) clear++; }
+    const ratio = total ? clear/total : 0;
+    this.onProgress(Math.min(ratio/this.threshold,1));
+    if(ratio >= this.threshold && !this.done){
+      this.done = true;
+      this.onComplete();
+    }
+  }
+}
+function initScratchCard(){
+  const canvas = document.getElementById('scratch-canvas');
+  const wrap = document.getElementById('envelope-wrap');
+  scratchCardInstance = new ScratchCard(canvas, wrap, {
+    threshold: 0.55,
+    onProgress: (p)=>{
+      document.getElementById('scratch-fill').style.width = `${Math.round(p*100)}%`;
+      if(p > 0.15 && p < 0.9) document.getElementById('scratch-hint').textContent = 'كملي شوية... 👀';
+    },
+    onComplete: onEnvelopeScratched
+  });
+}
+async function onEnvelopeScratched(){
+  document.getElementById('scratch-hint').textContent = 'برافو عليكي! 🎉';
+  const canvas = document.getElementById('scratch-canvas');
+  canvas.style.transition = 'opacity .5s ease';
+  canvas.style.opacity = '0';
+  setTimeout(()=>{ canvas.style.display='none'; }, 500);
+  document.getElementById('envelope-wrap').classList.add('opened');
+  const rect = document.getElementById('envelope-wrap').getBoundingClientRect();
+  burstHearts(rect.left+rect.width/2, rect.top+rect.height/2, IS_MOBILE ? 12 : 20);
+  unlockSystem.complete('envelope');
+  await stitch.celebrate();
+  await stitch.say('عرفتي تفتحيها! 😎❤️');
+  renderButtons(document.getElementById('envelope-continue'), [
+    { label:'تفتحي الرسالة؟ 💌', onClick: ()=>{ goToScene('scene-letter'); startLetterScene(); } }
+  ]);
+  document.getElementById('envelope-continue').style.display = 'block';
+}
+
+/* ---------- LETTER SCENE ---------- */
+const LETTER_LINES = [
+  'يا بسبوستي الحلوة،',
+  'Stitch قالي إنه هيوصلك الرسالة دي بطريقته الخاصة 😂',
+  'بس الحقيقة إن كل كلمة فيها من قلبي أنا.',
+  'إنتي بتضحكيني في أوقات كنت مش متخيل حد يضحكني فيها.',
+  'وبتخليني أفتكر إن في حاجات حلوة كتير لسه جاية.',
+  'وكل يوم بعرف إني بحبك أكتر من اللي قبله.',
+  'لسه في حاجات عمر مخبيها ليكي...'
+];
+async function startLetterScene(){
+  const card = document.getElementById('letter-card');
+  card.innerHTML = '';
+  LETTER_LINES.forEach(line=>{
+    const p = document.createElement('p');
+    p.className = 'letter-line letter-font';
+    p.textContent = line;
+    card.appendChild(p);
+  });
+  const lines = card.querySelectorAll('.letter-line');
+  for(let i=0;i<lines.length;i++){
+    await wait(REDUCED_MOTION ? 50 : 550);
+    lines[i].classList.add('show');
+  }
+  await wait(500);
+  unlockSystem.complete('letter');
+  renderButtons(document.getElementById('letter-continue'), [
+    { label:'أكمل؟ 👀', onClick: enterHub }
+  ]);
+}
+
+/* ---------- HUB ---------- */
+let hubEntered = false;
+async function enterHub(){
+  goToScene('scene-hub');
+  document.getElementById('floating-nav').classList.add('visible');
+  if(!hubEntered){
+    hubEntered = true;
+    await wait(400);
+    await stitch.say('من هنا هنكمل مع بعض... جربي كل حاجة على راحتك 👀❤️');
+    await wait(2400);
+    stitch.hideBubble();
+  }
+}
+
+document.getElementById('jump-btn').addEventListener('click', async ()=>{
+  const quotes = QUOTES;
+  await stitch.jump();
+  burstHearts(window.innerWidth/2, window.innerHeight*0.7, 8);
+  await stitch.say(quotes[Math.floor(Math.random()*quotes.length)]);
+  setTimeout(()=>stitch.hideBubble(), 3200);
+});
+
+['heart-egg-1','heart-egg-2'].forEach(id=>{
+  const el = document.getElementById(id);
+  el.addEventListener('click', (e)=>{
+    const rect = el.getBoundingClientRect();
+    burstHearts(rect.left+rect.width/2, rect.top+rect.height/2, 6);
+    el.animate([{transform:'scale(1)'},{transform:'scale(1.5)'},{transform:'scale(1)'}], { duration: REDUCED_MOTION?1:400 });
+  });
+});
+
+/* =========================================================
+   6. SHEETS / PANELS
+========================================================= */
+const backdrop = document.getElementById('sheet-backdrop');
+let activeSheet = null;
+function openSheet(name){
+  closeSheet();
+  const sheet = document.getElementById('sheet-' + name);
+  backdrop.classList.add('show');
+  sheet.classList.add('show');
+  activeSheet = sheet;
+}
+function closeSheet(){
+  if(activeSheet) activeSheet.classList.remove('show');
+  backdrop.classList.remove('show');
+  activeSheet = null;
+}
+backdrop.addEventListener('click', closeSheet);
+document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click', closeSheet));
+
+document.querySelectorAll('#floating-nav button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const panel = btn.dataset.panel;
+    openSheet(panel);
+    if(panel === 'counter') renderQuoteDots();
+  });
+});
+
+/* ---------- LOVE COUNTER ---------- */
+const START_DATE = new Date("2025-10-18T16:00:43");
+const counterUnits = [
+  { key:'years', label:'سنة' }, { key:'months', label:'شهر' }, { key:'days', label:'يوم' },
+  { key:'hours', label:'ساعة' }, { key:'minutes', label:'دقيقة' }, { key:'seconds', label:'ثانية' }
+];
+function diffFromStart(now){
+  let y = now.getFullYear() - START_DATE.getFullYear();
+  let mo = now.getMonth() - START_DATE.getMonth();
+  let d = now.getDate() - START_DATE.getDate();
+  let h = now.getHours() - START_DATE.getHours();
+  let mi = now.getMinutes() - START_DATE.getMinutes();
+  let s = now.getSeconds() - START_DATE.getSeconds();
+  if(s<0){ s+=60; mi--; }
+  if(mi<0){ mi+=60; h--; }
+  if(h<0){ h+=24; d--; }
+  if(d<0){
+    const prevMonth = new Date(now.getFullYear(), now.getMonth(), 0).getDate();
+    d += prevMonth; mo--;
+  }
+  if(mo<0){ mo+=12; y--; }
+  return { years:y, months:mo, days:d, hours:h, minutes:mi, seconds:s };
+}
+let counterCache = {};
+function renderCounter(){
+  const grid = document.getElementById('counter-grid');
+  const diff = diffFromStart(new Date());
+  if(!grid.children.length){
+    grid.innerHTML = counterUnits.map(u=>`
+      <div class="counter-cell">
+        <span class="counter-num" id="cnum-${u.key}">0</span>
+        <div class="counter-label">${u.label}</div>
+      </div>`).join('');
+  }
+  counterUnits.forEach(u=>{
+    const el = document.getElementById('cnum-'+u.key);
+    const val = diff[u.key];
+    if(counterCache[u.key] !== val){
+      el.textContent = val;
+      el.classList.remove('pulse'); void el.offsetWidth; el.classList.add('pulse');
+      counterCache[u.key] = val;
+    }
+  });
+}
+setInterval(renderCounter, 1000);
+renderCounter();
+
+/* ---------- QUOTE WALL ---------- */
+const QUOTES = [
+  "وما زلت في كل مرة أحدثك فيها أعشقك من جديد.. أنت نعمة متعلقة لأقصى حد في نفسي!",
+  "أريدك أن تعرفي جيدًا أن وجودك يشكل فارقًا عظيمًا في قلبي وفي توازني واستقراري.",
+  "أخاف عليك من كل شيء وأفكر بك طوال الوقت.. أحبك في كل مرة أتذكر فيها وجهك وتلك الابتسامة.",
+  "أحببتك جدًا.. لا أعرف ما الذي حل بي، وكأنما ارتبطت بك صدفة وسقطت قلوبنا وبدل كل منا قلبه، أخذت قلبي وأخذت قلبك.",
+  "يا شيئًا من نعيم الدنيا.. أحبك، ويليق بك أن أستثنيك عن الكل.",
+  "إنما الأرواح على صفاء نواياها تتلاقى.. أنت لست أول حب، أنت أول حياة!",
+  "تعلقة بأصغر تفاصيلك.. أحببتك حتى رأوك في عيني وسمعوك في ضحكتي وشعروا بك في حديثي.",
+  "وإن أحبوك ألفًا، فلن يحبوك إلا قطرة من بحري! أحببتك فعلاً حتى عرفت أنك عالم يسكن بداخلي.",
+  "لست أمام عيني.. لكنك كل ما أرى! بحبك يا بسبوستي وأغلى حاجة عندي."
+];
+let quoteIndex = 0;
+let quoteAutoTimer = null;
+function renderQuote(){
+  document.getElementById('quote-text').textContent = QUOTES[quoteIndex];
+  document.querySelectorAll('.quote-dot').forEach((d,i)=>d.classList.toggle('active', i===quoteIndex));
+}
+function renderQuoteDots(){
+  const wrap = document.getElementById('quote-dots');
+  wrap.innerHTML = QUOTES.map(()=>'<span class="quote-dot"></span>').join('');
+  renderQuote();
+}
+function resetQuoteAuto(){
+  clearTimeout(quoteAutoTimer);
+  quoteAutoTimer = setTimeout(()=>{
+    quoteIndex = (quoteIndex+1) % QUOTES.length;
+    renderQuote();
+    resetQuoteAuto();
+  }, 8000);
+}
+document.getElementById('quote-prev').addEventListener('click', ()=>{ quoteIndex = (quoteIndex-1+QUOTES.length)%QUOTES.length; renderQuote(); resetQuoteAuto(); });
+document.getElementById('quote-next').addEventListener('click', ()=>{ quoteIndex = (quoteIndex+1)%QUOTES.length; renderQuote(); resetQuoteAuto(); });
+resetQuoteAuto();
+
+document.getElementById('to-quotes-btn').addEventListener('click', ()=>{
+  document.getElementById('counter-view').style.display = 'none';
+  document.getElementById('quotes-view').style.display = 'block';
+  renderQuoteDots();
+});
+document.getElementById('back-to-counter').addEventListener('click', ()=>{
+  document.getElementById('quotes-view').style.display = 'none';
+  document.getElementById('counter-view').style.display = 'block';
+});
+
+/* ---------- MESSAGE TO OMAR ---------- */
+document.getElementById('message-send').addEventListener('click', async ()=>{
+  const input = document.getElementById('message-input');
+  const text = input.value.trim();
+  const status = document.getElementById('message-status');
+  if(!text){ status.textContent = 'اكتبي حاجة الأول 🥺'; return; }
+  await firebaseService.saveMessage(text);
+  status.textContent = 'وصلت لعمر ❤️';
+  input.value = '';
+  unlockSystem.complete('message');
+  stitch.celebrate(1200);
+  setTimeout(()=>{ status.textContent=''; }, 3000);
+});
+
+/* =========================================================
+   AUDIO_CONFIG — background music playlist
+   عايز تضيفي أو تغيري أغنية؟ زوّدي/عدّلي سطر هنا بس، مفيش داعي تدوري في باقي الكود.
+   حطي ملف الأغنية في: ./assets/audio/
+========================================================= */
+const AUDIO_CONFIG = [
+  { title:'رامي صبري - إحساسي معاك', src:'./assets/audio/ihsasy-maak.mp3' },
+  { title:'رامي صبري - بحبك', src:'./assets/audio/bahebak-ramy.mp3' },
+  { title:'أنغام - مش حبيبي بس', src:'./assets/audio/mesh-habibi-bas.mp3' },
+  { title:'وائل جسار - عايش عشانك', src:'./assets/audio/ayesh-ashanek.mp3' },
+  { title:'عبد الرحمن محمد - أصابك عشق', src:'./assets/audio/asabaka-eshq.mp3' }
+];
+class MusicPlayer{
+  constructor(tracks){
+    this.tracks = tracks;
+    this.index = 0;
+    this.audio = new Audio();
+    this.audio.preload = 'none';
+    this._bind();
+    this._renderList();
+    this.load(0, false);
+  }
+  _bind(){
+    this.audio.addEventListener('timeupdate', ()=>{
+      if(!this.audio.duration) return;
+      const pct = (this.audio.currentTime/this.audio.duration)*100;
+      document.getElementById('music-seek').value = pct;
+      document.getElementById('music-current').textContent = fmtTime(this.audio.currentTime);
+    });
+    this.audio.addEventListener('loadedmetadata', ()=>{
+      document.getElementById('music-duration').textContent = fmtTime(this.audio.duration);
+    });
+    this.audio.addEventListener('ended', ()=>this.next());
+    this.audio.addEventListener('error', ()=>{
+      document.getElementById('music-error').textContent = 'الأغنية دي مش متاحة دلوقتي 🎵 — ضيفي ملفاتك في assets/audio';
+      document.getElementById('music-toggle').textContent = '▶';
+      document.getElementById('vinyl').classList.remove('spinning');
+      stitch.groove(false);
+    });
+    document.getElementById('music-toggle').addEventListener('click', ()=>this.toggle());
+    document.getElementById('music-prev').addEventListener('click', ()=>this.prev());
+    document.getElementById('music-next').addEventListener('click', ()=>this.next());
+    document.getElementById('music-seek').addEventListener('input', (e)=>{
+      if(this.audio.duration) this.audio.currentTime = (e.target.value/100)*this.audio.duration;
+    });
+    document.getElementById('music-volume').addEventListener('input', (e)=>{ this.audio.volume = e.target.value; });
+    // Background music, not foreground — kept low so it doesn't compete with Stitch's voice/bubbles.
+    // She can always raise it herself with the volume slider in the music sheet.
+    this.audio.volume = 0.35;
+  }
+  load(i, autoplay){
+    this.index = (i+this.tracks.length)%this.tracks.length;
+    const t = this.tracks[this.index];
+    this.audio.src = t.src;
+    document.getElementById('music-title').textContent = t.title;
+    document.getElementById('music-error').textContent = '';
+    document.getElementById('music-seek').value = 0;
+    document.getElementById('music-current').textContent = '00:00';
+    document.getElementById('music-duration').textContent = '00:00';
+    this._renderList();
+    if(autoplay) this.play();
+  }
+  play(){
+    this.audio.play().then(()=>{
+      document.getElementById('music-toggle').textContent = '⏸';
+      document.getElementById('vinyl').classList.add('spinning');
+      stitch.groove(true);
+      unlockSystem.complete('music');
+    }).catch(()=>{
+      document.getElementById('music-error').textContent = 'مش قادرين نشغل الأغنية دلوقتي 🎵';
+    });
+  }
+  pause(){
+    this.audio.pause();
+    document.getElementById('music-toggle').textContent = '▶';
+    document.getElementById('vinyl').classList.remove('spinning');
+    stitch.groove(false);
+  }
+  toggle(){ this.audio.paused ? this.play() : this.pause(); }
+  next(){ this.load(this.index+1, true); }
+  prev(){ this.load(this.index-1, true); }
+  /* Swap in a track list loaded from assets/audio/playlist.json (see loadAudioConfigOverride).
+     If music hasn't started yet, load the new list fresh; if it's already playing, just
+     refresh the visible list so we don't interrupt her. */
+  setTracks(newTracks){
+    if(!newTracks || !newTracks.length) return;
+    this.tracks = newTracks;
+    if(this.audio.paused && !this.audio.currentTime){
+      this.load(0, false);
+    } else {
+      this._renderList();
+    }
+  }
+  _renderList(){
+    const wrap = document.getElementById('music-list');
+    wrap.innerHTML = this.tracks.map((t,i)=>`<div class="track-row ${i===this.index?'active':''}" data-i="${i}">🎵 <span>${t.title}</span></div>`).join('');
+    wrap.querySelectorAll('.track-row').forEach(row=>{
+      row.addEventListener('click', ()=>{ this.load(parseInt(row.dataset.i), true); });
+    });
+  }
+}
+function fmtTime(sec){
+  if(!isFinite(sec)) return '00:00';
+  const m = Math.floor(sec/60).toString().padStart(2,'0');
+  const s = Math.floor(sec%60).toString().padStart(2,'0');
+  return `${m}:${s}`;
+}
+const musicPlayer = new MusicPlayer(AUDIO_CONFIG);
+
+/* =========================================================
+   EASY SONG LIST — assets/audio/playlist.json
+   أسهل طريقة تضيفي/تغيّري أغنية: عدّلي ملف assets/audio/playlist.json
+   (ملف نصي بسيط، مش لازم تفتحي كود الموقع خالص). لو الملف مش موجود
+   أو مش متاح (زي لما بتفتحي الملف مباشرة من الجهاز)، الموقع بيرجع
+   تلقائيًا لقايمة AUDIO_CONFIG المكتوبة فوق كنسخة احتياطية.
+========================================================= */
+async function loadAudioConfigOverride(){
+  try{
+    const res = await fetch('./assets/audio/playlist.json', { cache:'no-store' });
+    if(!res.ok) return null;
+    const data = await res.json();
+    if(!Array.isArray(data) || !data.length) return null;
+    return data
+      .filter(t=>t && (t.file || t.src))
+      .map(t=>({ title: t.title || 'أغنية', src: t.src || ('./assets/audio/' + t.file) }));
+  }catch(e){ return null; } // missing file, invalid JSON, or blocked fetch (e.g. file://) — silently keep the built-in list
+}
+loadAudioConfigOverride().then(tracks=>{ if(tracks) musicPlayer.setTracks(tracks); });
+
+/* Persistent background music: starts specifically when she taps the very first
+   "start" button of the experience (see startIntro() below) — not on any random tap
+   on the page. Because this is a single-page app, the same <audio> element just keeps
+   playing as she moves between scenes/sheets afterward — nothing ever reloads. */
+let _bgMusicStarted = false;
+function tryStartBackgroundMusic(){
+  if(_bgMusicStarted) return;
+  _bgMusicStarted = true;
+  musicPlayer.play();
+}
+
+/* ---------- VOICE RECORDER ---------- */
+class VoiceRecorder{
+  constructor(){
+    this.state = 'idle';
+    this.mediaRecorder = null;
+    this.chunks = [];
+    this.blob = null;
+    this.stream = null;
+    this.timerInterval = null;
+    this.seconds = 0;
+    this.audioCtx = null;
+    this.analyser = null;
+    this.waveRaf = null;
+    this._bindUI();
+    this._renderButtons();
+  }
+  _bindUI(){
+    document.getElementById('mic-btn').addEventListener('click', ()=>{
+      if(this.state === 'idle') this.start();
+      else if(this.state === 'recording') this.stop();
+    });
+  }
+  async start(){
+    const micBtn = document.getElementById('mic-btn');
+    const status = document.getElementById('voice-status');
+    status.classList.remove('voice-error');
+    status.textContent = '';
+
+    // Never fail silently: check support + secure context BEFORE asking for permission.
+    if(location.protocol === 'file:'){
+      this._showError('إنتي فاتحة index.html مباشرة من ملفات الجهاز (file://) — والمتصفح بيمنع استخدام المايك خالص في الحالة دي، حتى لو الزرار والكود سليمين 100%. الحل: ارفعي المشروع على استضافة بتديكي رابط https (زي Netlify أو GitHub Pages) وافتحيه من هناك. التفاصيل في README.txt تحت "ليه التسجيل الصوتي محتاج HTTPS".');
+      return;
+    }
+    if(!window.isSecureContext){
+      this._showError('التسجيل الصوتي محتاج اتصال آمن (HTTPS) عشان يشتغل 🔒 لازم تفتحي الموقع برابط https أو من localhost — شوفي ملف README.txt.');
+      return;
+    }
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+      this._showError('المتصفح ده مش بيدعم التسجيل الصوتي 😕 جربي كروم أو سفاري بآخر تحديث.');
+      return;
+    }
+
+    // Immediate visual feedback the moment she taps — before the permission prompt even appears.
+    micBtn.classList.add('requesting');
+    micBtn.setAttribute('aria-label', 'بيستأذن المايك...');
+    stitch.setState('recording');
+
+    try{
+      this.stream = await navigator.mediaDevices.getUserMedia({ audio:true });
+    }catch(e){
+      micBtn.classList.remove('requesting');
+      micBtn.setAttribute('aria-label', 'ابدئي التسجيل');
+      stitch.setState('idle');
+      let msg = 'مقدرناش نوصل للمايك دلوقتي 🙏';
+      if(e.name === 'NotAllowedError' || e.name === 'PermissionDeniedError'){
+        msg = 'لازم تسمحي للموقع بالوصول للمايكروفون من إعدادات المتصفح عشان تقدري تسجلي 🎙️❤️';
+      } else if(e.name === 'NotFoundError' || e.name === 'DevicesNotFoundError'){
+        msg = 'مفيش مايكروفون متاح على الجهاز ده 🎙️';
+      } else if(e.name === 'NotReadableError' || e.name === 'TrackStartError'){
+        msg = 'في تطبيق تاني شغال بيستخدم المايك دلوقتي. قفلي التطبيقات التانية وجربي تاني 🙏';
+      } else if(e.name === 'SecurityError'){
+        msg = 'المتصفح رفض الوصول للمايك لأسباب أمان. جربي تفتحي الموقع بصيغة https 🔒';
+      }
+      this._showError(msg);
+      return;
+    }
+
+    try{
+      this.chunks = [];
+      this.mediaRecorder = new MediaRecorder(this.stream);
+    }catch(e){
+      this.stream.getTracks().forEach(t=>t.stop());
+      this.stream = null;
+      micBtn.classList.remove('requesting');
+      stitch.setState('idle');
+      this._showError('حصلت مشكلة في تشغيل التسجيل على المتصفح ده 😕');
+      return;
+    }
+    this.mediaRecorder.ondataavailable = (e)=>{ if(e.data.size>0) this.chunks.push(e.data); };
+    this.mediaRecorder.onstop = ()=>this._onStopped();
+    this.mediaRecorder.onerror = (e)=>{
+      this._showError('حصل خطأ أثناء التسجيل، جربي تاني 🙏');
+      this.stop();
+    };
+    this.mediaRecorder.start();
+    this.state = 'recording';
+    this.seconds = 0;
+    micBtn.classList.remove('requesting');
+    micBtn.classList.add('recording');
+    micBtn.textContent = '⏹';
+    micBtn.setAttribute('aria-label', 'وقّفي التسجيل');
+    document.getElementById('voice-playback').style.display = 'none';
+    document.getElementById('wave-canvas').style.display = 'block';
+    this._startWave();
+    this.timerInterval = setInterval(()=>{
+      this.seconds++;
+      document.getElementById('voice-timer').textContent = fmtTime(this.seconds);
+      if(this.seconds >= 30) this.stop();
+    }, 1000);
+    stitch.setState('recording');
+    await stitch.say('أنا سامعك 👀🎙️');
+  }
+  _showError(msg){
+    const status = document.getElementById('voice-status');
+    status.classList.add('voice-error');
+    status.textContent = msg;
+    stitch.say(msg);
+    setTimeout(()=>stitch.hideBubble(), 3600);
+  }
+  stop(){
+    if(this.mediaRecorder && this.state === 'recording'){
+      this.mediaRecorder.stop();
+    }
+    clearInterval(this.timerInterval);
+    // Always release the microphone track — never leave the mic "hot" after recording.
+    if(this.stream) this.stream.getTracks().forEach(t=>t.stop());
+    this.stream = null;
+    this._stopWave();
+    const micBtn = document.getElementById('mic-btn');
+    micBtn.classList.remove('recording');
+    micBtn.classList.remove('requesting');
+    micBtn.setAttribute('aria-label', 'ابدئي التسجيل');
+    document.getElementById('wave-canvas').style.display = 'none';
+  }
+  _onStopped(){
+    this.blob = new Blob(this.chunks, { type:'audio/webm' });
+    const url = URL.createObjectURL(this.blob);
+    const audioEl = document.getElementById('voice-playback');
+    audioEl.src = url;
+    audioEl.style.display = 'block';
+    this.state = 'recorded';
+    document.getElementById('mic-btn').textContent = '🎙️';
+    stitch.setState('idle');
+    stitch.celebrate(1100);
+    stitch.say('أهو كده! 🥹❤️ تحبي تبعتيه لعمر؟');
+    this._renderButtons();
+  }
+  reRecord(){
+    this.blob = null;
+    this.state = 'idle';
+    document.getElementById('voice-playback').style.display = 'none';
+    document.getElementById('voice-timer').textContent = '00:00';
+    this._renderButtons();
+  }
+  async send(){
+    if(!this.blob) return;
+    const status = document.getElementById('voice-status');
+    status.textContent = 'بيتبعت... ❤️';
+    await firebaseService.saveVoiceMessage(this.blob, this.seconds);
+    status.textContent = 'وصلت لعمر ❤️';
+    unlockSystem.complete('voice');
+    stitch.celebrate(1400);
+    stitch.say('أوووه! دي وصلت لعمر بقى 👀❤️');
+    this.state = 'idle';
+    this.blob = null;
+    document.getElementById('voice-playback').style.display = 'none';
+    document.getElementById('voice-timer').textContent = '00:00';
+    this._renderButtons();
+    setTimeout(()=>{ status.textContent=''; }, 3000);
+  }
+  _renderButtons(){
+    const wrap = document.getElementById('voice-buttons');
+    if(this.state === 'recorded'){
+      wrap.innerHTML = '';
+      const mk = (label, cls, fn)=>{
+        const b = document.createElement('button');
+        b.className = 'choice-btn' + (cls? ' '+cls : '');
+        b.style.opacity = 1; b.style.transform='none';
+        b.textContent = label;
+        b.addEventListener('click', fn);
+        wrap.appendChild(b);
+      };
+      mk('أبعته لعمر ❤️', '', ()=>this.send());
+      mk('أسجله تاني', 'ghost', ()=>this.reRecord());
+    } else {
+      wrap.innerHTML = '';
+    }
+  }
+  _startWave(){
+    if(REDUCED_MOTION) return;
+    try{
+      this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const src = this.audioCtx.createMediaStreamSource(this.stream);
+      this.analyser = this.audioCtx.createAnalyser();
+      this.analyser.fftSize = 64;
+      src.connect(this.analyser);
+      const canvas = document.getElementById('wave-canvas');
+      canvas.width = canvas.clientWidth; canvas.height = canvas.clientHeight;
+      const ctx = canvas.getContext('2d');
+      const data = new Uint8Array(this.analyser.frequencyBinCount);
+      const draw = ()=>{
+        this.waveRaf = requestAnimationFrame(draw);
+        this.analyser.getByteFrequencyData(data);
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        const barW = canvas.width/data.length;
+        ctx.fillStyle = '#fb7185';
+        data.forEach((v,i)=>{
+          const h = (v/255)*canvas.height;
+          ctx.fillRect(i*barW, canvas.height-h, barW*0.7, h);
+        });
+      };
+      draw();
+    }catch(e){ /* waveform is decorative only — recording still works fine without it */ }
+  }
+  _stopWave(){
+    if(this.waveRaf) cancelAnimationFrame(this.waveRaf);
+    if(this.audioCtx) this.audioCtx.close().catch(()=>{});
+  }
+}
+const voiceRecorder = new VoiceRecorder();
+
+/* =========================================================
+   OMAR'S VOICE MESSAGES — prerecorded messages FROM Omar
+   ضيفي رسايلك الصوتية هنا بس. حطي ملف mp3 في: ./assets/voice/
+========================================================= */
+const OMAR_VOICE_MESSAGES = [
+  { id:'message-01', src:'./assets/voice/message-01.mp3', label:'رسالة 1', intro:'عمر سجل لك حاجة... تسمعيها؟ 🎧❤️' },
+  { id:'message-02', src:'./assets/voice/message-02.mp3', label:'رسالة 2', intro:'في رسالة تانية من عمر 👀' },
+  { id:'message-03', src:'./assets/voice/message-03.mp3', label:'رسالة 3', intro:'وسمعيني كمان شوية 💗' },
+  { id:'final-message', src:'./assets/voice/final-message.mp3', label:'الرسالة الأخيرة', intro:'وأخيرًا... الرسالة الأخيرة من عمر بصوته هو 🥹❤️' }
+];
+
+class OmarVoicePlayer{
+  constructor(messages){
+    this.messages = messages;
+    this.audioEl = document.getElementById('omar-voice-audio');
+    this.activeRow = null;
+    this._prevMusicVolume = null;
+    this._bind();
+    this._renderList();
+  }
+  _bind(){
+    this.audioEl.addEventListener('ended', ()=>this._finish());
+    this.audioEl.addEventListener('error', ()=>{
+      document.getElementById('omarvoice-status').textContent = 'الرسالة الصوتية دي لسه مش متاحة، عمر هيضيفها قريب 🎧';
+      this._finish();
+    });
+  }
+  _renderList(){
+    const wrap = document.getElementById('omarvoice-list');
+    wrap.innerHTML = '';
+    this.messages.forEach(msg=>{
+      const row = document.createElement('button');
+      row.className = 'voice-msg-row';
+      row.innerHTML = `<span class="icon">🎧</span><span>${msg.label}</span>`;
+      row.addEventListener('click', ()=>this.play(msg, row));
+      wrap.appendChild(row);
+    });
+  }
+  /* Swap in a message list loaded from assets/voice/messages.json (see loadOmarVoiceOverride). */
+  setMessages(newMessages){
+    if(!newMessages || !newMessages.length) return;
+    this.messages = newMessages;
+    this._renderList();
+  }
+  async play(msg, row){
+    if(this.activeRow) this.activeRow.classList.remove('playing');
+    this.activeRow = row;
+    row.classList.add('playing');
+    document.getElementById('omarvoice-status').textContent = '';
+    stitch.setState('whispering');
+    await stitch.say(msg.intro);
+    stitch.setState('idle');
+    this._duckMusic();
+    this.audioEl.src = msg.src;
+    try{
+      await this.audioEl.play();
+    }catch(e){
+      document.getElementById('omarvoice-status').textContent = 'الرسالة الصوتية دي لسه مش متاحة، عمر هيضيفها قريب 🎧';
+      this._finish();
+    }
+  }
+  _finish(){
+    if(this.activeRow) this.activeRow.classList.remove('playing');
+    this.activeRow = null;
+    this._restoreMusic();
+  }
+  _duckMusic(){
+    if(this._prevMusicVolume == null) this._prevMusicVolume = musicPlayer.audio.volume;
+    this._fade(musicPlayer.audio, 0.12, 450);
+  }
+  _restoreMusic(){
+    const target = this._prevMusicVolume != null ? this._prevMusicVolume : 0.35;
+    this._fade(musicPlayer.audio, target, 550);
+    this._prevMusicVolume = null;
+  }
+  _fade(audioEl, target, duration){
+    if(REDUCED_MOTION){ audioEl.volume = target; return; }
+    const start = audioEl.volume, startTime = performance.now();
+    const step = (t)=>{
+      const p = Math.min((t-startTime)/duration, 1);
+      audioEl.volume = start + (target-start)*p;
+      if(p < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
+}
+const omarVoicePlayer = new OmarVoicePlayer(OMAR_VOICE_MESSAGES);
+
+/* =========================================================
+   EASY VOICE MESSAGE LIST — assets/voice/messages.json
+   أسهل طريقة تضيفي رسالة صوتية جديدة: عدّلي ملف assets/voice/messages.json
+   لو الملف مش موجود أو مش متاح، الموقع بيرجع تلقائيًا لقايمة
+   OMAR_VOICE_MESSAGES المكتوبة فوق كنسخة احتياطية.
+========================================================= */
+async function loadOmarVoiceOverride(){
+  try{
+    const res = await fetch('./assets/voice/messages.json', { cache:'no-store' });
+    if(!res.ok) return null;
+    const data = await res.json();
+    if(!Array.isArray(data) || !data.length) return null;
+    return data
+      .filter(m=>m && (m.file || m.src))
+      .map(m=>({
+        id: m.id || m.file,
+        src: m.src || ('./assets/voice/' + m.file),
+        label: m.label || 'رسالة',
+        intro: m.intro || 'عمر سجل لك حاجة... تسمعيها؟ 🎧❤️'
+      }));
+  }catch(e){ return null; } // missing file, invalid JSON, or blocked fetch (e.g. file://) — silently keep the built-in list
+}
+loadOmarVoiceOverride().then(msgs=>{ if(msgs) omarVoicePlayer.setMessages(msgs); });
+
+/* ---------- QUIZ ---------- */
+const QUIZ_QUESTIONS = [
+  'إيه أكتر حاجة بتحبيها في عمر؟ ❤️',
+  'أول حاجة بتفتكريها لما تشوفي اسمه؟',
+  'لو عمر قدامك دلوقتي، هتقولي له إيه؟',
+  'إيه أكتر ذكرى نفسك تعيشيها معاه؟',
+  'اختاري كلمة واحدة توصف عمر بالنسبة ليكي.'
+];
+let quizIndex = 0;
+function renderQuizDots(){
+  document.getElementById('quiz-dots').innerHTML = QUIZ_QUESTIONS.map((_,i)=>`<span class="${i<quizIndex?'done':''}"></span>`).join('');
+}
+function renderQuizQuestion(){
+  renderQuizDots();
+  const body = document.getElementById('quiz-body');
+  if(quizIndex >= QUIZ_QUESTIONS.length){
+    body.innerHTML = `<div style="text-align:center; font-weight:800; padding:20px 0;">خلصتي كل الأسئلة! Stitch مبسوط جدًا 🥹❤️</div>`;
+    return;
+  }
+  const q = QUIZ_QUESTIONS[quizIndex];
+  body.innerHTML = `
+    <div style="font-weight:700; margin-bottom:10px;">${q}</div>
+    <textarea class="love-input" id="quiz-answer" placeholder="اكتبي إجابتك هنا..."></textarea>
+    <button class="choice-btn" id="quiz-next" style="width:100%; margin-top:12px; opacity:1; transform:none;">${quizIndex===QUIZ_QUESTIONS.length-1 ? 'إرسال ❤️' : 'التالي ❤️'}</button>
+  `;
+  document.getElementById('quiz-next').addEventListener('click', async ()=>{
+    const answer = document.getElementById('quiz-answer').value.trim();
+    await firebaseService.saveAnswer(q, answer, quizIndex);
+    const reactions = answer
+      ? ['آآآه... الكلام ده هخليه عندي 😂❤️', 'عمر لو شاف الإجابة دي هيطير من الفرحة 🥹']
+      : ['معلش... تقدري تجاوبي بعدين لو حبيتي 😉'];
+    stitch.say(reactions[Math.floor(Math.random()*reactions.length)]);
+    setTimeout(()=>stitch.hideBubble(), 2600);
+    quizIndex++;
+    renderQuizQuestion();
+  });
+}
+renderQuizQuestion();
+document.querySelector('#floating-nav button[data-panel="quiz"]').addEventListener('click', ()=>{
+  if(quizIndex >= QUIZ_QUESTIONS.length){ quizIndex = 0; }
+  renderQuizQuestion();
+});
+
+/* =========================================================
+   7. FINAL SURPRISE
+========================================================= */
+function showFinalPrompt(){
+  const wrap = document.getElementById('hub-hint');
+  wrap.textContent = 'في مفاجأة أخيرة مستنياكي... 👀✨';
+  const btn = document.createElement('button');
+  btn.className = 'choice-btn';
+  btn.style.marginTop = '14px'; btn.style.opacity='1'; btn.style.transform='none';
+  btn.textContent = 'المفاجأة الأخيرة ✨';
+  btn.addEventListener('click', playFinalScene);
+  document.getElementById('scene-hub').insertBefore(btn, document.getElementById('jump-btn'));
+}
+const FINAL_LINES = [
+  'لو وصلتي لهنا...',
+  'فمعنى كده إنك مشيتي كل الطريق معايا.',
+  'بس الحقيقة إن كل اللي هنا كان مجرد طريقة واحدة أقولك بيها:',
+  'أنا بحبك.',
+  '— عمر ❤️'
+];
+async function playFinalScene(){
+  goToScene('scene-final');
+  document.getElementById('floating-nav').classList.remove('visible');
+  const card = document.getElementById('final-card');
+  card.innerHTML = '';
+  FINAL_LINES.forEach(line=>{
+    const p = document.createElement('p');
+    p.className = 'letter-line letter-font';
+    p.textContent = line;
+    card.appendChild(p);
+  });
+  await wait(500);
+  const lines = card.querySelectorAll('.letter-line');
+  for(let i=0;i<lines.length;i++){
+    await wait(REDUCED_MOTION ? 50 : 900);
+    lines[i].classList.add('show');
+  }
+  stitch.dance(true);
+  const interval = setInterval(()=>{
+    burstHearts(Math.random()*window.innerWidth, window.innerHeight, 3);
+  }, 400);
+  setTimeout(()=>{ clearInterval(interval); stitch.dance(false); }, 6000);
+  unlockSystem.markFinalSeen();
+}
+
+/* =========================================================
+   8. SHAKE EASTER EGG (best-effort, non-iOS-permission devices only)
+========================================================= */
+if(window.DeviceMotionEvent && typeof DeviceMotionEvent.requestPermission !== 'function'){
+  let lastShake = 0;
+  window.addEventListener('devicemotion', (e)=>{
+    const a = e.accelerationIncludingGravity;
+    if(!a) return;
+    const total = Math.abs(a.x||0)+Math.abs(a.y||0)+Math.abs(a.z||0);
+    const now = Date.now();
+    if(total > 42 && now - lastShake > 4000 && document.getElementById('scene-hub').classList.contains('active')){
+      lastShake = now;
+      stitch.say('هههههه ليه بتهزيني كده؟ 😂💗');
+      setTimeout(()=>stitch.hideBubble(), 2200);
+    }
+  });
+}
+
+})();
+</script>
+</body>
+</html>
