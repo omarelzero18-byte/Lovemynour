@@ -1,7 +1,26 @@
 [
-  { "title": "إحساسي معاك - رامي صبري", "file": "ihsasy-maak.mp3" },
-  { "title": "بحبك - رامي صبري", "file": "bahebak-ramy.mp3" },
-  { "title": "مش حبيبي بس - أنغام", "file": "mesh-habibi-bas.mp3" },
-  { "title": "عايش عشانك - وائل جسار", "file": "ayesh-ashanek.mp3" },
-  { "title": "أصابك عشق - عبد الرحمن محمد", "file": "asabaka-eshq.mp3" }
+  { 
+    "title": "حبيت يا قلبي", 
+    "file": "06_Habeet_Ya_Alby.mp3" 
+  },
+  { 
+    "title": "إحساسي معاك - رامي صبري", 
+    "file": "ihsasy-maak.mp3" 
+  },
+  { 
+    "title": "بحبك - رامي صبري", 
+    "file": "bahebak-ramy.mp3" 
+  },
+  { 
+    "title": "مش حبيبي بس - أنغام", 
+    "file": "mesh-habibi-bas.mp3" 
+  },
+  { 
+    "title": "عايش عشانك - وائل جسار", 
+    "file": "ayesh-ashanek.mp3" 
+  },
+  { 
+    "title": "أصابك عشق - عبد الرحمن محمد", 
+    "file": "asabaka-eshq.mp3" 
+  }
 ]
