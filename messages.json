@@ -1,6 +1,17 @@
 [
-  { "label": "رسالة 1", "file": "message-01.mp3", "intro": "عمر سجل لك حاجة... تسمعيها؟ 🎧❤️" },
-  { "label": "رسالة 2", "file": "message-02.mp3", "intro": "في رسالة تانية من عمر 👀" },
-  { "label": "رسالة 3", "file": "message-03.mp3", "intro": "وسمعيني كمان شوية 💗" },
-  { "label": "الرسالة الأخيرة", "file": "final-message.mp3", "intro": "وأخيرًا... الرسالة الأخيرة من عمر بصوته هو 🥹❤️" }
+  { 
+    "label": "رسالة 1", 
+    "file": "https://www.dropbox.com/scl/fi/qndmivo49ap05lkh3s0wc/PTT-20260902-WA0011.opus?rlkey=0rg2za5mh8drgzo1cksvo8xo4&st=a2g5t874&raw=1", 
+    "intro": "عمر سجل لك حاجة... تسمعيها؟ 🎧❤️" 
+  },
+  { 
+    "label": "رسالة 2", 
+    "file": "https://www.dropbox.com/scl/fi/nj9cb0b1agv45obodi0ug/PTT-20260902-WA0013.opus?rlkey=o7xzb5t2tl2nq38ib61x6osfo&st=jn39c6xp&raw=1", 
+    "intro": "في رسالة تانية من عمر 👀" 
+  },
+  { 
+    "label": "رسالة 3", 
+    "file": "https://www.dropbox.com/scl/fi/ll9xb0sr05rciec1jtbva/PTT-20260902-WA0012.opus?rlkey=o99z2izf0pj5xax9isp4i71fw&st=l2rrepxi&raw=1", 
+    "intro": "وسمعيني كمان شوية 💗" 
+  }
 ]
